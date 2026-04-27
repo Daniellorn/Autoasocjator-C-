@@ -118,7 +118,7 @@ int main(int argc, char** argv)
     WindowSpecification spec;
     InitWindow(spec.width, spec.height, "AutoasocjatorXY-RGB");
     
-    constexpr int layerCount = 4;
+    constexpr int layerCount = 5;
     float learningRate = 0.01f;
    
     Image img = LoadImage("lena_color260x260.png");
@@ -128,15 +128,23 @@ int main(int argc, char** argv)
     std::array<Layer, layerCount> neuralNet;
     
     InitLayer(neuralNet[0], 32, 5);
-    InitLayer(neuralNet[1], 64, 33);
-    InitLayer(neuralNet[2], 64, 65);
-    InitLayer(neuralNet[3], 3, 65);
+    InitLayer(neuralNet[1], 32, 33);
+    InitLayer(neuralNet[2], 32, 33);
+    InitLayer(neuralNet[3], 32, 33);
+    InitLayer(neuralNet[4], 3, 33);
 
     Image resultImg = GenImageColor(img.width, img.height, BLACK);
     Texture2D resultTex = LoadTextureFromImage(resultImg);
     Color* resultPixels = (Color*)resultImg.data;
 
     int epochCounter = 0;
+
+    std::vector<float> input;
+    input.resize(5);
+
+    std::vector<float> input2;
+    input.resize(5);
+
     while (!WindowShouldClose())
     {
         BeginDrawing();
@@ -148,7 +156,7 @@ int main(int argc, char** argv)
         {
             for (int x = 0; x < img.width; x++)
             {
-                std::vector<float> input = { (float)x / img.width, (float)y / img.height, 1.0f, std::sinf((float)x / img.width), std::sinf((float)y / img.height)};
+                input = { (float)x / img.width, (float)y / img.height, 1.0f, std::sinf((float)x / img.width), std::sinf((float)y / img.height)};
                 auto target = ColorNormalize(GetImageColor(img, x, y));
                 const std::array<float, 3> targetArr = { std::clamp(target.x, 0.1f, 0.9f), std::clamp(target.y, 0.1f, 0.9f), std::clamp(target.z, 0.1f, 0.9f) };
 
@@ -206,16 +214,15 @@ int main(int argc, char** argv)
             for (int x = 0; x < img.width; x++)
             {
                 // 1. Forward Pass
-                std::vector<float> input = { (float)x / img.width, (float)y / img.height, 1.0f , std::sinf((float)x / img.width),
-            std::sinf((float)y / img.height) };
+                input2 = { (float)x / img.width, (float)y / img.height, 1.0f , std::sinf((float)x / img.width),
+                            std::sinf((float)y / img.height) };
                 for (int k = 0; k < layerCount; k++)
                 {
-                    ForwardPass(neuralNet[k], input);
-                    input = neuralNet[k].output;
-                    input.push_back(1.0f);
+                    ForwardPass(neuralNet[k], input2);
+                    input2 = neuralNet[k].output;
+                    input2.push_back(1.0f);
                 }
 
-                // 2. Pobranie wyniku
                 resultPixels[y * img.width + x] = {
                                 (unsigned char)(neuralNet[layerCount - 1].output[0] * 255),
                                 (unsigned char)(neuralNet[layerCount - 1].output[1] * 255),
